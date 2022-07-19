@@ -1,47 +1,64 @@
-import {Play} from 'phosphor-react';
-import {CountdownContainer, FormContainer, HomeContainer, MinutesAmountInput, Separator, StartCountdownButton, TaskInput} from './style';
+import { HandPalm, Play } from 'phosphor-react'
+
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useContext } from 'react'
+import { FormProvider, useForm } from 'react-hook-form'
+import * as zod from 'zod'
+import { CyclesContext } from '../../contexts/CyclesContext'
+import { Countdown } from './components/Countdown'
+import { NewCycleForm } from './components/NewCycleForm'
+import {
+	HomeContainer,
+	StartCountdownButton,
+	StopCountdownButton
+} from './styles'
+
+const newCycleFormValidationSchema = zod.object({
+	task: zod.string().min(1, 'Informe a tarefa'),
+	minutesAmount: zod.number().min(1).max(60),
+})
+
+type NewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>
 
 export function Home() {
+
+	const {activeCycle, createNewCycle, interruptCurrentCycle} = useContext(CyclesContext)
+
+	const newCycleForm = useForm<NewCycleFormData>({
+		resolver: zodResolver(newCycleFormValidationSchema),
+		defaultValues: {
+			task: '',
+			minutesAmount: 0,
+		},
+	})
+	const { handleSubmit, watch, reset } = newCycleForm
+
+	function handleCreateNewCycle(data: NewCycleFormData) {
+		createNewCycle(data)
+		reset()
+	}
+
+	const task = watch('task')
+	const isSubmitDisabled = !task
 	return (
 		<HomeContainer>
-			<form>
-				<FormContainer>
-					<label htmlFor='task'>Vou trabalhar em</label>
-					<TaskInput
-						id='task'
-						type='text'
-						placeholder='Dê um nome para o seu projeto'
-						list='task-suggestion'
-					/>
-					<datalist id='task-suggestion'>
-						<option value='banana 1'/>
-						<option value='banana 2'/>
-						<option value='banana 3'/>
-					</datalist>
-					<label htmlFor='minutesAmount'>durante</label>
-					<MinutesAmountInput
-						type='number'
-						id='minutesAmount'
-						placeholder='00'
-						step={5}
-						min={5}
-						max={60}
-					/>
-					<span>minutos.</span>
-				</FormContainer>
-				<CountdownContainer>
-					<span>0</span>
-					<span>0</span>
-					<Separator>:</Separator>
-					<span>0</span>
-					<span>0</span>
-				</CountdownContainer>
-				<StartCountdownButton
-					type='submit'>
-					<Play size={24}/>
-					Start
-				</StartCountdownButton>
+			<form onSubmit={handleSubmit(handleCreateNewCycle)}>
+				<FormProvider {...newCycleForm}>
+					<NewCycleForm />
+				</FormProvider>
+				<Countdown />
+				{activeCycle ? (
+					<StopCountdownButton onClick={interruptCurrentCycle} type="button">
+						<HandPalm size={24} />
+						Parar
+					</StopCountdownButton>
+				) : (
+					<StartCountdownButton disabled={isSubmitDisabled} type="submit">
+						<Play size={24} />
+						Start
+					</StartCountdownButton>
+				)}
 			</form>
 		</HomeContainer>
-	);
+	)
 }
