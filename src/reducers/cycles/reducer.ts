@@ -1,4 +1,5 @@
 import { ActionType } from './actions'
+import { produce } from 'immer'
 
 export interface Cycle {
     id: string
@@ -17,35 +18,30 @@ interface CyclesState {
 export function cyclesReducers(state: CyclesState, action: any) {
     switch(action.type) {
     case ActionType.AddNewCycle:
-        return {
-            ...state,
-            cycles: [...state.cycles, action.payload.newCycle],
-            activeCycleId: action.payload.newCycle.id,
+        return produce(state, draft => {
+            draft.cycles.push(action.payload.newCycle)
+            draft.activeCycleId = action.payload.newCycle.id
+        })
+    case ActionType.InterruptCycle: {
+        const currentCycleIndex = state.cycles.findIndex(cycle => cycle.id === state.activeCycleId)
+        if (currentCycleIndex < 0) {
+            return state
         }
-    case ActionType.InterruptCycle:
-        return {
-            ...state,
-            cycles: state.cycles.map(cycle => {
-                if (cycle.id === state.activeCycleId) {
-                    return {...cycle, interruptCurrentCycle: new Date}
-                } else {
-                    return cycle
-                }
-            }),
-            activeCycleId: null,
+        return produce(state, draft => {
+            draft.cycles[currentCycleIndex].stoppedAt = new Date
+            draft.activeCycleId = null
+        })
+    }
+    case ActionType.FinishCycle: {
+        const currentCycleIndex = state.cycles.findIndex(cycle => cycle.id === state.activeCycleId)
+        if (currentCycleIndex < 0) {
+            return state
         }
-    case ActionType.FinishCycle:
-        return {
-            ...state,
-            cycles: state.cycles.map(cycle => {
-                if (cycle.id === state.activeCycleId) {
-                    return {...cycle, ffinishedDate: new Date}
-                } else {
-                    return cycle
-                }
-            }),
-            activeCycleId: null,
-        }
+        return produce(state, draft => {
+            draft.cycles[currentCycleIndex].finishedAt = new Date
+            draft.activeCycleId = null
+        })
+    }
     default:
         return state
     }

@@ -6,7 +6,6 @@ export enum ActionType {
     FinishCycle,
 }
 
-
 export function AddNewCycleAction(newCycle: Cycle) {
     return {
         type: ActionType.AddNewCycle,
